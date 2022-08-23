@@ -1,4 +1,4 @@
-
+#include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -20,6 +20,13 @@ typedef struct s_nodelist {
 enum bool {true = 1, false = 0};
 typedef int  bool;
 
+void delay(int number_of_seconds)
+{
+    int milli_seconds = 1000 * number_of_seconds;
+    clock_t start_time = clock();
+    while (clock() < start_time + milli_seconds) ;
+}
+
 bool startsWith(char* src, char*sub) {
     for(int i=0; sub[i]!='\0'; i++) {
         if(src[i] != sub[i])
@@ -27,19 +34,15 @@ bool startsWith(char* src, char*sub) {
     }
     return true;
 }
-
-void addLast(nodelist **head, int val) {
-    nodelist *newNode = malloc(sizeof(nodelist));
-    newNode->id = val;
-    newNode->next = NULL;
-    if(*head == NULL)
-         *head = newNode;
-    else {
-        nodelist *lastNode = *head;
-        while(lastNode->next != NULL)
-            lastNode = lastNode->next;
-        lastNode->next = newNode;
+bool isNodeExist(nodelist**nodes, int id) {
+    nodelist* n = *nodes;
+    while(n != NULL) {
+        if(n->id == id)
+            return true;
+        n = n->next;
     }
+    printf("id:%d doesn't exist\n", id);
+    return false;
 }
 
 bool addNode(nodelist** node, int id) {
@@ -48,19 +51,34 @@ bool addNode(nodelist** node, int id) {
     new->next = NULL;
     nodelist *last = *node;
     while(last->next != NULL) {
-        if(last->id == id) {
-            perror("this node already exists");
+        if(isNodeExist(&last, id)) {
+            printf("[ %d ] this node already exists\n", id);
             return false;
         }
         last = last->next;
     }
     last->next = new;
-    printf("node id : %d\n", last->next->id);
+    printf("Succesful add node with id : %d\n", id);
     return true;
+}
+int countCode(nodelist**node) {
+    int count = 0;
+    nodelist*c = *node;
+    while(c != NULL) {
+        c = c->next;
+        ++count;
+    }
+    return count;
+}
+void printNodes(nodelist**list) {
+    nodelist*n = *list;
+    while(n != NULL) {
+        printf("%d\t", n->id);
+        n = n->next;
+    }
 }
 
 int blockchain() {
-
     nodelist *blockchain = malloc(sizeof *blockchain);
     blockchain->id = 1;
     blockchain->blocklist = malloc(sizeof(blocklist*));
@@ -68,12 +86,14 @@ int blockchain() {
     blockchain->blocklist->data = "Block !!";
     blockchain->blocklist->hash = "bwefjkb2jk3huhbvhi5u4njhgj#$#@WFe";
     blockchain->blocklist->next = NULL;
-    printf("blockchain.\nid: %d\n", blockchain->id);
-    printf("block data: %s\n", blockchain->blocklist->data);
-    printf("block hash: %s\n", blockchain->blocklist->hash);
+    // printf("blockchain.\nid: %d\n", blockchain->id);
+    // printf("block data: %s\n", blockchain->blocklist->data);
+    // printf("block hash: %s\n", blockchain->blocklist->hash);
     addNode(&blockchain, 2);
-    // addLast(&blockchain, 2);
-    // printf("new node: %d\n", blockchain->next->id);
+    addNode(&blockchain, 2);
+    addNode(&blockchain, 2);
+    printf("size: %d\n", countCode(&blockchain));
+    printNodes(&blockchain);
     return 1;
 }
 
