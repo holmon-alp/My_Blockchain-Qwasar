@@ -41,7 +41,7 @@ bool isNodeExist(nodelist**nodes, int id) {
             return true;
         n = n->next;
     }
-    printf("id:%d doesn't exist\n", id);
+    printf("\nid:%d doesn't exist\n", id);
     return false;
 }
 
@@ -60,6 +60,33 @@ bool addNode(nodelist** node, int id) {
     last->next = new;
     printf("Succesful add node with id : %d\n", id);
     return true;
+}
+
+void deleteFirstByKey(nodelist** list, int id) {
+    if(!isNodeExist(list, id)) {
+        return ;
+    }
+    nodelist* now = malloc(sizeof(nodelist*));
+    now = *list;
+    nodelist* next = malloc(sizeof(nodelist*));
+    next = now->next;
+    
+    while(now != NULL) {
+        if(now->id == id && next != NULL) {
+            *list = next;
+            printf("delete node with id: %d\n", id);
+            break;
+        }
+        if (next->id == id && next != NULL) {
+            now->next = now->next->next;
+            printf("delete node by id: %d\n", id);
+            break;
+        }
+        now = now->next;
+        // if(next->next != NULL) {
+        //     next = next->next;
+        // }
+    }
 }
 int countCode(nodelist**node) {
     int count = 0;
@@ -90,8 +117,16 @@ int blockchain() {
     // printf("block data: %s\n", blockchain->blocklist->data);
     // printf("block hash: %s\n", blockchain->blocklist->hash);
     addNode(&blockchain, 2);
-    addNode(&blockchain, 2);
-    addNode(&blockchain, 2);
+    addNode(&blockchain, 3);
+    addNode(&blockchain, 4);
+    
+    printNodes(&blockchain);
+
+    deleteFirstByKey(&blockchain, 1);
+    deleteFirstByKey(&blockchain, 4);
+    deleteFirstByKey(&blockchain, 1);
+    deleteFirstByKey(&blockchain, 3);
+    deleteFirstByKey(&blockchain, 2);
     printf("size: %d\n", countCode(&blockchain));
     printNodes(&blockchain);
     return 1;
