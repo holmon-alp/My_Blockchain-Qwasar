@@ -20,8 +20,7 @@ typedef struct s_nodelist {
 enum bool {true = 1, false = 0};
 typedef int  bool;
 
-void delay(int number_of_seconds)
-{
+void delay(int number_of_seconds) {
     int milli_seconds = 1000 * number_of_seconds;
     clock_t start_time = clock();
     while (clock() < start_time + milli_seconds) ;
@@ -34,14 +33,24 @@ bool startsWith(char* src, char*sub) {
     }
     return true;
 }
-bool isNodeExist(nodelist**nodes, int id) {
+int countCode(nodelist**node) {
+    int count = 0;
+    nodelist*c = *node;
+    while(c != NULL) {
+        c = c->next;
+        ++count;
+    }
+    return (count>0) ? count-1 : count;
+}
+
+
+bool isNodeExist(nodelist** nodes, int id) {
     nodelist* n = *nodes;
-    while(n != NULL) {
+    while (n != NULL) {
         if(n->id == id)
             return true;
         n = n->next;
     }
-    printf("\nid:%d doesn't exist\n", id);
     return false;
 }
 
@@ -58,56 +67,108 @@ bool addNode(nodelist** node, int id) {
         last = last->next;
     }
     last->next = new;
-    printf("Succesful add node with id : %d\n", id);
+    // printf("Succesful add node with id : %d\n", id);
     return true;
 }
 
-void deleteFirstByKey(nodelist** list, int id) {
-    if(!isNodeExist(list, id)) {
-        return ;
+void deleteAllNodes(nodelist** head) {
+   nodelist* current = *head;
+   nodelist* next;
+   while (current != NULL) {
+       next = current->next;
+       free(current);
+       current = next;
+   }
+   *head = NULL;
+}
+void deleteFirstByKey(nodelist *head, int key) {
+    nodelist *prev, *cur;
+    while (head != NULL && head->id == key) {
+        prev = head;
+        head = head->next;
+        free(prev);
+        return;
     }
-    nodelist* now = malloc(sizeof(nodelist*));
-    now = *list;
-    nodelist* next = malloc(sizeof(nodelist*));
-    next = now->next;
-    
-    while(now != NULL) {
-        if(now->id == id && next != NULL) {
-            *list = next;
-            printf("delete node with id: %d\n", id);
-            break;
-        }
-        if (next->id == id && next != NULL) {
-            now->next = now->next->next;
-            printf("delete node by id: %d\n", id);
-            break;
-        }
-        now = now->next;
-        // if(next->next != NULL) {
-        //     next = next->next;
-        // }
+
+    prev = NULL;
+    cur  = head;
+    while (cur != NULL) {
+        if (cur->id == key) {
+            if (prev != NULL) 
+                prev->next = cur->next;
+            free(cur);
+            return;
+        } 
+
+        prev = cur;
+        cur = cur->next;
     }
 }
-int countCode(nodelist**node) {
-    int count = 0;
-    nodelist*c = *node;
-    while(c != NULL) {
-        c = c->next;
-        ++count;
+int pushBlock(nodelist** nodes, blocklist** block) {
+    nodelist* n = *nodes;
+    blocklist* b =n->blocklist;
+    if(b == NULL) {
+        n->blocklist = *block;
+        printf("Add block to first\n");
+        return 0;
+    } else {
+        while(b != NULL) {
+            printf("$ %s\t", b->data);
+            b = b->next;
+        }
+        b = *block;
+        printf("\nadd block with while loop\n");
+        b->next = NULL;
+        n->blocklist = b;
     }
-    return count;
+    return 0;
 }
+void addBlockById(nodelist** nodes, char* data, int node_id) {
+    blocklist* new = malloc(sizeof(blocklist));
+    new->data = malloc(strlen(data)+1);
+    new->data = data;
+    nodelist *node = *nodes;
+    while (node != NULL) {
+        if (node->id == node_id) {
+            
+            printf("find node (%d)\n", node->id);
+            pushBlock(&node, &new);
+            // node->blocklist = new;
+            // node->blocklist->next = NULL;
+            break;
+        }
+        node = node->next;
+    }
+}
+
+void printBlocksById(nodelist* list, int index) {
+    nodelist* n = list;
+    while (n != NULL) {
+        if(n->id == index) {
+            // blocklist* block = n->blocklist;
+            printf("print node id: %d\n", n->id);
+            while(n->blocklist != NULL) {
+                printf("block ->%s\n", n->blocklist->data);
+                printf("hash: ->%s\n", n->blocklist->hash);
+                n->blocklist = n->blocklist->next;
+            }
+        }
+        n = n->next;
+    }
+}
+
 void printNodes(nodelist**list) {
     nodelist*n = *list;
     while(n != NULL) {
         printf("%d\t", n->id);
         n = n->next;
     }
+    putchar('\n');
 }
 
 int blockchain() {
     nodelist *blockchain = malloc(sizeof *blockchain);
-    blockchain->id = 1;
+    blockchain->id = 0;
     blockchain->blocklist = malloc(sizeof(blocklist*));
     blockchain->next = NULL;
     blockchain->blocklist->data = "Block !!";
@@ -119,16 +180,20 @@ int blockchain() {
     addNode(&blockchain, 2);
     addNode(&blockchain, 3);
     addNode(&blockchain, 4);
-    
+    addNode(&blockchain, 1);
+
+    addBlockById(&blockchain, "block 1", 3);
+    addBlockById(&blockchain, "block 2", 3);
+    addBlockById(&blockchain, "block 3", 3);
+    // printBlocksById(blockchain, 0);
+
+    printBlocksById(blockchain, 3);
     printNodes(&blockchain);
 
-    deleteFirstByKey(&blockchain, 1);
-    deleteFirstByKey(&blockchain, 4);
-    deleteFirstByKey(&blockchain, 1);
-    deleteFirstByKey(&blockchain, 3);
-    deleteFirstByKey(&blockchain, 2);
-    printf("size: %d\n", countCode(&blockchain));
-    printNodes(&blockchain);
+    // printf("size: %d\n", countCode(&blockchain));
+    // deleteAllNodes(&blockchain);
+    // printf("size: %d\n", countCode(&blockchain));
+    // printNodes(&blockchain);
     return 1;
 }
 
