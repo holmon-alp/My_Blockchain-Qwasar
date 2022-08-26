@@ -3,8 +3,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-
-
 typedef struct s_bocklist {
     char* data;
     char* hash;
@@ -106,20 +104,21 @@ void deleteFirstByKey(nodelist *head, int key) {
 }
 int pushBlock(nodelist** nodes, blocklist** block) {
     nodelist* n = *nodes;
-    blocklist* b =n->blocklist;
-    if(b == NULL) {
+    blocklist *last = n->blocklist;
+    if(last == NULL) {
         n->blocklist = *block;
-        printf("Add block to first\n");
+        printf("Add block to first (%s)\n", n->blocklist->data);
         return 0;
     } else {
-        while(b != NULL) {
-            printf("$ %s\t", b->data);
+        blocklist* b =  malloc(sizeof(blocklist*));
+        b = last;
+        while(b->next != NULL) {
             b = b->next;
         }
-        b = *block;
-        printf("\nadd block with while loop\n");
-        b->next = NULL;
-        n->blocklist = b;
+        b->next = *block;
+        printf("new added (%s) -- previus block (%s)\n\n", b->next->data, b->data);
+        b->next->next = NULL;
+        n->blocklist = last;
     }
     return 0;
 }
@@ -131,7 +130,7 @@ void addBlockById(nodelist** nodes, char* data, int node_id) {
     while (node != NULL) {
         if (node->id == node_id) {
             
-            printf("find node (%d)\n", node->id);
+            // printf("find node (%d)\n", node->id);
             pushBlock(&node, &new);
             // node->blocklist = new;
             // node->blocklist->next = NULL;
@@ -185,6 +184,7 @@ int blockchain() {
     addBlockById(&blockchain, "block 1", 3);
     addBlockById(&blockchain, "block 2", 3);
     addBlockById(&blockchain, "block 3", 3);
+    addBlockById(&blockchain, "block 4", 3);
     // printBlocksById(blockchain, 0);
 
     printBlocksById(blockchain, 3);
