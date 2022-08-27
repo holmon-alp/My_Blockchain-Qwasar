@@ -2,6 +2,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+#include <fcntl.h>
+
+#define OR ||
+#define AND &&
 
 typedef struct s_bocklist {
     char* data;
@@ -17,6 +22,29 @@ typedef struct s_nodelist {
 
 enum bool {true = 1, false = 0};
 typedef int  bool;
+
+#define MAX_READ_SIZE 50
+char* input() {
+    char* res = malloc(MAX_READ_SIZE);
+    char c;
+    int i = 0;
+    while(read(STDIN_FILENO, &c, 1) > 0) {
+        if(strlen(res) == MAX_READ_SIZE-1 OR c=='\n')
+            break;
+        res[i++] = c;
+    }
+    return res;
+}
+
+int putch(char c) {
+    return write(1,&c, 1);
+}
+int putstr(char* s) {
+    while(*s) {
+        putch(*s++);
+    }
+    return putch('\n');
+}
 
 void delay(int number_of_seconds) {
     int milli_seconds = 1000 * number_of_seconds;
@@ -51,6 +79,17 @@ bool isNodeExist(nodelist** nodes, int id) {
     }
     return false;
 }
+bool isBlockExistInNode(nodelist** node, blocklist** block) {
+    nodelist*n = *node;
+    blocklist *b = n->blocklist;
+    blocklist* in = *block;
+    while (b != NULL) {
+        if(b->data == in->data)
+            return true;
+        b = b->next;
+    }
+    return false;
+}
 
 bool addNode(nodelist** node, int id) {
     nodelist* new = malloc(sizeof(nodelist*));
@@ -79,7 +118,7 @@ void deleteAllNodes(nodelist** head) {
    }
    *head = NULL;
 }
-void deleteFirstByKey(nodelist *head, int key) {
+void deleteNodeByKey(nodelist *head, int key) {
     nodelist *prev, *cur;
     while (head != NULL && head->id == key) {
         prev = head;
@@ -102,6 +141,44 @@ void deleteFirstByKey(nodelist *head, int key) {
         cur = cur->next;
     }
 }
+void removeBlockfromBlocklist(blocklist *block, char* key) {
+    blocklist *prev, *cur;
+    if (block != NULL && block->data == key) {
+        prev = block;
+        block = block->next;
+        free(prev);
+        return;
+    }
+    prev = NULL;
+    cur  = block;
+    while (cur != NULL) {
+        if (cur->data == key) {
+            if (prev != NULL) 
+                prev->next = cur->next;
+            free(cur);
+            return;
+        } 
+        prev = cur;
+        cur = cur->next;
+    }
+}
+
+void removeBlock(nodelist **head, char* data) {
+    nodelist *node = *head;
+    blocklist* test = malloc(sizeof(blocklist));
+    test->data = data;
+    bool is_block_exist = false;
+    while(node != NULL) {
+        blocklist* now = node->blocklist;
+        if(isBlockExistInNode(&node, &test)){
+            removeBlockfromBlocklist(now, data);
+            is_block_exist = true;
+        }
+        node = node->next;
+    }
+    if(!is_block_exist) putstr("block doesn't exist");
+}
+
 int pushBlock(nodelist** nodes, blocklist** block) {
     nodelist* n = *nodes;
     blocklist *last = n->blocklist;
@@ -129,7 +206,10 @@ void addBlockById(nodelist** nodes, char* data, int node_id) {
     nodelist *node = *nodes;
     while (node != NULL) {
         if (node->id == node_id) {
-            
+            if(isBlockExistInNode(&node, &new)) {
+                printf("Block already exist\n");
+                return ;
+            }
             // printf("find node (%d)\n", node->id);
             pushBlock(&node, &new);
             // node->blocklist = new;
@@ -155,6 +235,8 @@ void printBlocksById(nodelist* list, int index) {
         n = n->next;
     }
 }
+
+// int removeBlock(nodelist** nodes, )
 
 void printNodes(nodelist**list) {
     nodelist*n = *list;
@@ -185,8 +267,11 @@ int blockchain() {
     addBlockById(&blockchain, "block 2", 3);
     addBlockById(&blockchain, "block 3", 3);
     addBlockById(&blockchain, "block 4", 3);
+    addBlockById(&blockchain, "block 5", 3);
+    addBlockById(&blockchain, "block 6", 3);
     // printBlocksById(blockchain, 0);
-
+    removeBlock(&blockchain, "block 3");
+    // removeBlock(&blockchain, "block 32www");
     printBlocksById(blockchain, 3);
     printNodes(&blockchain);
 
@@ -199,6 +284,8 @@ int blockchain() {
 
 int main() {
     
-    blockchain();
+    // blockchain();
+    
+    printf("%s\n", input());
     return 0;
 }
