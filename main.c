@@ -7,7 +7,10 @@
 
 #define OR ||
 #define AND &&
+#define MAX_READ_SIZE 200
 
+enum bool {true = 1, false = 0};
+typedef int  bool;
 typedef struct s_bocklist {
     char* data;
     char* hash;
@@ -20,15 +23,11 @@ typedef struct s_nodelist {
     struct s_nodelist* next;
 } nodelist;
 
-enum bool {true = 1, false = 0};
-typedef int  bool;
 
-#define MAX_READ_SIZE 50
 char* input() {
-    char* res = malloc(MAX_READ_SIZE);
-    char c;
+    char* res = malloc(MAX_READ_SIZE), c;
     int i = 0;
-    while(read(STDIN_FILENO, &c, 1) > 0) {
+    while(read(STDIN_FILENO, &c, 1) > -1) {
         if(strlen(res) == MAX_READ_SIZE-1 OR c=='\n')
             break;
         res[i++] = c;
@@ -285,7 +284,7 @@ int blockchain() {
 int main() {
     
     // blockchain();
-    
-    printf("%s\n", input());
+    char* arr = input();
+        printf("%s\n", arr);
     return 0;
 }
