@@ -16,7 +16,7 @@
 
 typedef struct s_bocklist {
     char* data;
-    char* hash;
+    char* time;
     struct s_bocklist* next;
 } blocklist;
 
