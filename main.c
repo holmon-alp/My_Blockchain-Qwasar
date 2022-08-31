@@ -1,8 +1,4 @@
 #include "main.h"
-#include <fcntl.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
 
 enum bool {true = 1, false = 0};
 typedef int  bool;
@@ -157,7 +153,7 @@ void removeBlock(nodelist **head, char* data) {
         }
         node = node->next;
     }
-    if(!is_block_exist) putstr("block doesn't exist");
+    if(!is_block_exist) error_block_exist(data);
 }
 
 int pushBlock(nodelist** nodes, blocklist** block) {
@@ -165,7 +161,6 @@ int pushBlock(nodelist** nodes, blocklist** block) {
     blocklist *last = n->blocklist;
     if(last == NULL) {
         n->blocklist = *block;
-        // printf("Add block to first (%s)\n", n->blocklist->data);
         return 0;
     } else {
         blocklist* b =  malloc(sizeof(blocklist*));
@@ -174,7 +169,6 @@ int pushBlock(nodelist** nodes, blocklist** block) {
             b = b->next;
         }
         b->next = *block;
-        // printf("new added (%s) -- previus block (%s) - - node: %d\n\n", b->next->data, b->data, n->id);
         b->next->next = NULL;
         n->blocklist = last;
     }
@@ -244,8 +238,8 @@ void save_quit(nodelist** blockchain, const char* file) {
     write(fd, for_save, sizeof(for_save));
     close(fd);
 }
-// check block is exist in blocklist;
-bool blockInBlock(blocklist** block, char* data) {
+// check block is exist
+bool isBlockInBlocklist(blocklist** block, char* data) {
     blocklist* t = *block;
     if(t == NULL) return false;
     while ( t ) {
@@ -271,15 +265,15 @@ void append(blocklist**bl, char* data) {
     }
 }
 
-blocklist* findBiggestBlock(nodelist**nodes) {
+blocklist* getCommonBlocklist(nodelist**nodes) {
     nodelist* node = *nodes;
     blocklist* bl = NULL;
     while(node != NULL) {
         if(node->id == 0) goto step;
         blocklist*block = node->blocklist;
         while(block != NULL) {
-            printf("-- %s --\n", block->data);
-            if(!blockInBlock(&bl, block->data) AND block->data) {
+            // printf("-- %s --\n", block->data);
+            if(!isBlockInBlocklist(&bl, block->data) AND block->data) {
                 append(&bl, block->data);
             }
             block = block->next;
@@ -290,16 +284,84 @@ blocklist* findBiggestBlock(nodelist**nodes) {
     return bl;
 }
 
+// sync command 
+void sync_nodes(nodelist**nodes) {
+    nodelist* node = *nodes;
+    blocklist* sync_block = getCommonBlocklist(&node);
+    while(node) {
+        node->blocklist = NULL;
+        node->blocklist = sync_block;
+        node = node->next;
+    }
+}
+bool is_block_sync(blocklist*b1, blocklist*b2) {
+    blocklist* bl1 = b1;
+    blocklist* bl2 = b2;
+    if(!bl1 AND !bl2) return true;
+    while(bl1) {
+        if(bl2 == NULL)
+            return false;
+        if(bl1->data != bl2->data)
+            return false;
+        bl1 = bl1->next;
+        bl2 = bl2->next;
+    }
+    return true;
+}
+
+bool is_sync(nodelist**nodes) {
+    nodelist* curr = *nodes;
+    nodelist* n_next = curr->next;
+    while(n_next) {
+        blocklist   *b1 = curr->blocklist,
+                    *b2 = n_next->blocklist;
+        if(!is_block_sync(b1, b2))
+            return true;
+        curr = curr->next;
+        n_next = n_next->next;
+    }
+    return false;
+}
+
+void RemoveChars(char *s, char c) {
+    int writer = 0, reader = 1;
+
+    while (s[reader]) {
+        if (s[reader]==c AND s[reader+1]==c) {   
+            s[writer] = s[reader++];
+        } else
+            s[writer++] = s[reader];
+        reader++;       
+    }
+
+    s[writer]='\0';
+}
+void clear(char**str) {
+    char* s = *str;
+    for(;*s == ' ';s++);
+    int len;
+    for(len = 0;s[len] !='\0'; len++);
+    while(s[len] == ' '){
+        s[len--] = '\0';
+    }
+    // RemoveChars(str, ' ');
+}
+
+// void parse(char* m) {
+//     int size = 0;
+//     for()
+// }
+
 int blockchain() {
     nodelist *blockchain = malloc(sizeof *blockchain);
-    // Genesis block
+    // Genesis node
     blockchain->id = 0;
     blockchain->blocklist = malloc(sizeof(blocklist*));
     blockchain->next = NULL;
     blockchain->blocklist->data = "0";
-    blockchain->blocklist->time = "0000000";
+    blockchain->blocklist->time = "00:00:00";
     blockchain->blocklist->next = NULL;
-    // genessis block
+    // genessis node
     addNode(&blockchain, 2);
     addNode(&blockchain, 3);
     addNode(&blockchain, 4);
@@ -319,13 +381,15 @@ int blockchain() {
     addBlockById(&blockchain, "block 2", 5);
     addBlockById(&blockchain, "block 1", 5);
     // printBlocksById(blockchain, 0);
-    // removeBlock(&blockchain, "block 3");
+    removeBlock(&blockchain, "block 3");
     // removeBlock(&blockchain, "block 32www");
     // printBlocksById(blockchain, 3);
+    is_sync(&blockchain);
     printNodes(&blockchain, true);
-    printf("---------------------\n");
-    findBiggestBlock(&blockchain);
-    printNodes(&blockchain, true);
+    // printf("---------------------\n");
+    // findBiggestBlock(&blockchain);
+    sync_nodes(&blockchain);
+    // printNodes(&blockchain, true);
     // printf("size: %d\n", countNodes(&blockchain));
     // deleteAllNodes(&blockchain);
     // printf("size: %d\n", countCode(&blockchain));
@@ -334,11 +398,22 @@ int blockchain() {
     return 1;
 }
 
-// void parse(char* m) {
-
-// }
 
 int main() {
-    blockchain();
+    char* s = "  dew   rvv btbtvrv vtvtvt  ";
+    printf("%ld\n", strlen(s));
+    // clear(&s);
+    for(;*s == ' ';s++);
+    // int len;
+    // for(len = 0;s[len] !='\0'; len++);
+    // len--;
+    // printf("len = %d\n last char >>%c<<\n", len, s[len]);
+    // while(s[len] == ' '){
+    //     printf("|%c|\n", s[len]);
+    //     s[len] = '\0';
+    //     len--;
+    // }
+    printf("%ld\n", strlen(s));
+    // blockchain();
     return 0;
 }
