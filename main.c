@@ -18,8 +18,8 @@ char* input() {
     return res;
 }
 
-int putch(char c) { return write(1,&c, 1);}
-int putstr(char* s) { while(*s) { putch(*s++);} return putch('\n'); }
+void putch(char c) { write(1,&c, 1);}
+void putstr(char* s) { while(*s) { putch(*s++);}  putch('\n'); }
 
 void delay(int number_of_seconds) {
     int milli_seconds = 1000 * number_of_seconds;
@@ -202,16 +202,18 @@ void addBlockById(nodelist** nodes, char* data, int node_id) {
     }
 }
 
-void printBlocksById(nodelist** list, int index) {
-    nodelist* n = *list;
+void printBlocksById(nodelist* list, int index) {
+    nodelist* n = list;
     while (n != NULL) {
         if(n->id == index) {
-            while(n->blocklist != NULL) {
-                if(n->blocklist->data)
-                    printf("%s, ", n->blocklist->data);
-                n->blocklist = n->blocklist->next;
+            blocklist* b = n->blocklist;
+            while(b != NULL) {
+                if(b->data)
+                    printf("%s, ", b->data);
+                b = b->next;
             }
-           ENDL;
+            ENDL;
+            break;
         }
         n = n->next;
     }
@@ -223,7 +225,7 @@ void printNodes(nodelist**list, bool l) {
         if(n->id != 0) {
             if(l AND !isNodeEmpty(&n)) {
                printf("node - %d: ", n->id);
-               printBlocksById(&n, n->id);
+               printBlocksById(n, n->id);
             } 
             else
                 printf("node - %d\n", n->id);
@@ -242,23 +244,11 @@ void save_quit(nodelist** blockchain, const char* file) {
     write(fd, for_save, sizeof(for_save));
     close(fd);
 }
-int countBlocks(nodelist** n) {
-    nodelist* node = *n;
-    blocklist* block = node->blocklist;
-    int count = 0;
-    while(block != NULL)  {
-        ++count;
-        block = block->next;
-    }
-    return count;
-} 
-
+// check block is exist in blocklist;
 bool blockInBlock(blocklist** block, char* data) {
     blocklist* t = *block;
-    printf("new data: %s\n", data);
     if(t == NULL) return false;
     while ( t ) {
-        printf(">>>>%s\n", t->data);
         if(t->data == data) 
             return true;
         t = t->next;
@@ -266,62 +256,36 @@ bool blockInBlock(blocklist** block, char* data) {
     return false;
 }
 
-/* Given a reference (pointer to pointer) to the head
-of a list and an int, appends a new node at the end */
-void append(blocklist** head_ref, blocklist* new_block)
-{
-	/* 1. allocate node */
-	// struct Node* new_node = (struct Node*) malloc(sizeof(struct Node));
-
-	blocklist *last = *head_ref; /* used in step 5*/
-
-	/* 2. put in the data */
-	// new_node->data = new_data;
-
-	/* 3. This new node is going to be the last node, so make next
-		of it as NULL*/
-	new_block->next = NULL;
-
-	/* 4. If the Linked List is empty, then make the new node as head */
-	if (*head_ref == NULL)
-	{
-	    *head_ref = new_block;
-	    return;
-	}
-	
-	/* 5. Else traverse till the last node */
-	while (last->next != NULL)
-		last = last->next;
-
-	/* 6. Change the next of last node */
-	last->next = new_block;
-	return;
+void append(blocklist**bl, char* data) {
+    blocklist *newNode = malloc(sizeof(blocklist));
+    newNode->data = data;
+    newNode->next = NULL;
+    if(*bl == NULL)
+         *bl = newNode;
+    else {
+        blocklist *lastNode = *bl;
+        while(lastNode->next != NULL) {
+            lastNode = lastNode->next;
+        }
+        lastNode->next = newNode;
+    }
 }
 
-
 blocklist* findBiggestBlock(nodelist**nodes) {
-    nodelist* n = *nodes;
-    blocklist* bl = malloc(sizeof(blocklist*));
-    while( n ) {
-        if(n->id != 0) {
-            printf("node:%d \n", n->id);
-            blocklist* new = n->blocklist;
-            while(new != NULL) {
-                if(!blockInBlock(&bl, new->data)) {
-                    printf("|  %s  |\n", new->data);
-                    append(&bl, new);
-                }
-                printf(">> %s <<\n", new->data);
-                new = new->next;
+    nodelist* node = *nodes;
+    blocklist* bl = NULL;
+    while(node != NULL) {
+        if(node->id == 0) goto step;
+        blocklist*block = node->blocklist;
+        while(block != NULL) {
+            printf("-- %s --\n", block->data);
+            if(!blockInBlock(&bl, block->data) AND block->data) {
+                append(&bl, block->data);
             }
+            block = block->next;
         }
-           
-        n = n->next;
-    } 
-    blocklist* test = bl;
-    while(test) {
-        printf("data: %s\n", test->data);
-        test = test->next;
+        step:  
+        node = node->next;
     }
     return bl;
 }
@@ -333,7 +297,7 @@ int blockchain() {
     blockchain->blocklist = malloc(sizeof(blocklist*));
     blockchain->next = NULL;
     blockchain->blocklist->data = "0";
-    blockchain->blocklist->hash = "0000000";
+    blockchain->blocklist->time = "0000000";
     blockchain->blocklist->next = NULL;
     // genessis block
     addNode(&blockchain, 2);
@@ -359,7 +323,9 @@ int blockchain() {
     // removeBlock(&blockchain, "block 32www");
     // printBlocksById(blockchain, 3);
     printNodes(&blockchain, true);
+    printf("---------------------\n");
     findBiggestBlock(&blockchain);
+    printNodes(&blockchain, true);
     // printf("size: %d\n", countNodes(&blockchain));
     // deleteAllNodes(&blockchain);
     // printf("size: %d\n", countCode(&blockchain));
