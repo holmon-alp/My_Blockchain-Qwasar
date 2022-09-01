@@ -1,8 +1,69 @@
 #include "main.h"
+#include <stdlib.h>
+#include <string.h>
 
 enum bool {true = 1, false = 0};
 typedef int  bool;
 
+//for parse commands
+#ifndef STRUCT_STRING_ARRAY
+#define STRUCT_STRING_ARRAY
+typedef struct s_string_array {
+    int size;
+    char** array;
+} string_array;
+#endif
+char *my_strtok(char *s, const char *sep)
+{
+    static char *p = NULL;
+
+    if (s == NULL && ((s = p) == NULL))
+        return NULL;
+    s += strspn(s, sep);
+    if (!*s)
+        return p = NULL;
+    p = s + strcspn(s, sep);
+    if (*p)
+        *p++ = '\0';
+    else 
+        p = NULL;
+    return s;
+}
+
+string_array* my_split(char *a, char *b)
+{
+    int s = 1;
+    int i = 0;
+    for (int i = 0; a[i] != '\0'; i++){
+        if (a[i] == b[0]) {
+            s++;
+        }
+    }
+    string_array* c = (string_array*) malloc(sizeof(string_array));
+
+    if (strcmp(a, "") == 0 && strcmp(b, "") == 0) {
+        c->size = 0;
+        c->array = malloc(1 * sizeof(char*));
+        char* x = (char*) malloc(sizeof(char*)*1);
+        x = "";
+        c->array[0] = x;
+        return c;
+    }else{
+        c->size = s;
+        char* result = (char*) malloc(sizeof(char*)*strlen(a));
+        c->array = malloc(s * sizeof(char*));
+        result = my_strtok(a, b);
+        while (result != 0) {
+            int size = strlen(result);
+            char* copy_s = malloc(size + 2);
+            strcpy(copy_s, result);
+            c->array[i++] = copy_s;
+            result = my_strtok(result + size + 1, b);
+        }
+        return c;
+    }
+}
+// _^_ end 
 char* input() {
     char* res = malloc(MAX_READ_SIZE), c;
     int i = 0;
@@ -316,36 +377,33 @@ bool is_sync(nodelist**nodes) {
         blocklist   *b1 = curr->blocklist,
                     *b2 = n_next->blocklist;
         if(!is_block_sync(b1, b2))
-            return true;
+            return false;
         curr = curr->next;
         n_next = n_next->next;
     }
-    return false;
+    return true;
 }
 
-void RemoveChars(char *s, char c) {
-    int writer = 0, reader = 1;
-
-    while (s[reader]) {
-        if (s[reader]==c AND s[reader+1]==c) {   
-            s[writer] = s[reader++];
-        } else
-            s[writer++] = s[reader];
-        reader++;       
+void trim(char* dest, char* src) {
+    int readIndex = 0, writeIndex;
+     while(src[readIndex] == ' '){
+        readIndex++;
     }
-
-    s[writer]='\0';
-}
-void clear(char**str) {
-    char* s = *str;
-    for(;*s == ' ';s++);
-    int len;
-    for(len = 0;s[len] !='\0'; len++);
-    while(s[len] == ' '){
-        s[len--] = '\0';
+    for(writeIndex = 0;src[readIndex] != '\0'; readIndex++){
+      if(src[readIndex]==' ' && src[readIndex-1]==' '){
+          continue;
+      }
+      dest[writeIndex] = src[readIndex];
+      writeIndex++;
     }
-    // RemoveChars(str, ' ');
+    dest[writeIndex] = '\0';
 }
+// void clear(char**str) {
+//     char* s = *str;
+//     char* res = malloc(strlen(s));
+//     trim(res, s);
+//     string_array * s_a = my_split(res, " ");
+// }
 
 // void parse(char* m) {
 //     int size = 0;
@@ -362,58 +420,50 @@ int blockchain() {
     blockchain->blocklist->time = "00:00:00";
     blockchain->blocklist->next = NULL;
     // genessis node
-    addNode(&blockchain, 2);
-    addNode(&blockchain, 3);
-    addNode(&blockchain, 4);
-    addNode(&blockchain, 1);
-    addNode(&blockchain, 5);
-    addNode(&blockchain, 31);
 
-    addBlockById(&blockchain, "block 1", 3);
-    addBlockById(&blockchain, "block 1", 1);
-    addBlockById(&blockchain, "block 11", 1);
-    addBlockById(&blockchain, "block 2", 3);
-    addBlockById(&blockchain, "block 4", 4);
-    addBlockById(&blockchain, "block 45", 4);
-    addBlockById(&blockchain, "block 4", 2);
-    addBlockById(&blockchain, "block 5", 3);
-    addBlockById(&blockchain, "block 6", 31);
-    addBlockById(&blockchain, "block 2", 5);
-    addBlockById(&blockchain, "block 1", 5);
-    // printBlocksById(blockchain, 0);
-    removeBlock(&blockchain, "block 3");
-    // removeBlock(&blockchain, "block 32www");
-    // printBlocksById(blockchain, 3);
-    is_sync(&blockchain);
-    printNodes(&blockchain, true);
-    // printf("---------------------\n");
-    // findBiggestBlock(&blockchain);
-    sync_nodes(&blockchain);
+    // while(true) {
+        char is_syn = is_sync(&blockchain) ? 's' : '-';
+        printf("[%c%d]> ", is_syn, countNodes(&blockchain));
+    // }
+    // addNode(&blockchain, 2);
+    // addNode(&blockchain, 3);
+    // addNode(&blockchain, 4);
+    // addNode(&blockchain, 1);
+    // addNode(&blockchain, 5);
+    // addNode(&blockchain, 31);
+
+    // addBlockById(&blockchain, "block 1", 3);
+    // addBlockById(&blockchain, "block 1", 1);
+    // addBlockById(&blockchain, "block 11", 1);
+    // addBlockById(&blockchain, "block 2", 3);
+    // addBlockById(&blockchain, "block 4", 4);
+    // addBlockById(&blockchain, "block 45", 4);
+    // addBlockById(&blockchain, "block 4", 2);
+    // addBlockById(&blockchain, "block 5", 3);
+    // addBlockById(&blockchain, "block 6", 31);
+    // addBlockById(&blockchain, "block 2", 5);
+    // addBlockById(&blockchain, "block 1", 5);
+    // // printBlocksById(blockchain, 0);
+    // removeBlock(&blockchain, "block 3");
+    // // removeBlock(&blockchain, "block 32www");
+    // // printBlocksById(blockchain, 3);
+    // is_sync(&blockchain);
     // printNodes(&blockchain, true);
-    // printf("size: %d\n", countNodes(&blockchain));
-    // deleteAllNodes(&blockchain);
-    // printf("size: %d\n", countCode(&blockchain));
-    // printNodes(&blockchain);
-    // save_quit(&blockchain, "Nodes");
+    // // printf("---------------------\n");
+    // // findBiggestBlock(&blockchain);
+    // sync_nodes(&blockchain);
+    // // printNodes(&blockchain, true);
+    // // printf("size: %d\n", countNodes(&blockchain));
+    // // deleteAllNodes(&blockchain);
+    // // printf("size: %d\n", countCode(&blockchain));
+    // // printNodes(&blockchain);
+    // // save_quit(&blockchain, "Nodes");
     return 1;
 }
 
-
+ 
 int main() {
-    char* s = "  dew   rvv btbtvrv vtvtvt  ";
-    printf("%ld\n", strlen(s));
-    // clear(&s);
-    for(;*s == ' ';s++);
-    // int len;
-    // for(len = 0;s[len] !='\0'; len++);
-    // len--;
-    // printf("len = %d\n last char >>%c<<\n", len, s[len]);
-    // while(s[len] == ' '){
-    //     printf("|%c|\n", s[len]);
-    //     s[len] = '\0';
-    //     len--;
-    // }
-    printf("%ld\n", strlen(s));
-    // blockchain();
+    
+    blockchain();
     return 0;
 }
