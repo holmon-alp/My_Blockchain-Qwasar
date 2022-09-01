@@ -4,15 +4,9 @@
 
 enum bool {true = 1, false = 0};
 typedef int  bool;
-
+#define all_key 100001
 //for parse commands
-#ifndef STRUCT_STRING_ARRAY
-#define STRUCT_STRING_ARRAY
-typedef struct s_string_array {
-    int size;
-    char** array;
-} string_array;
-#endif
+
 char *my_strtok(char *s, const char *sep)
 {
     static char *p = NULL;
@@ -85,7 +79,7 @@ void delay(int number_of_seconds) {
 }
 
 bool like(char* des, char*src) {
-    if(des==NULL AND src==NULL)
+    if(des==0 AND src==0)
         return true;
     for(int i=0; src[i] !='\0'; i++){
         if(des[i] == '\0') return false;
@@ -101,6 +95,16 @@ int countNodes(nodelist**node) {
         ++count;
     }
     return (count>0) ? count-1 : count;
+}
+
+int* node_ids(nodelist** nodes) {
+    int *res = malloc(sizeof(*nodes)), i=0;
+    nodelist*n = *nodes;
+    while(n) {
+        res[i++] = n->id;
+        n = n->next;
+    }
+    return res;
 }
 
 bool isNodeExist(nodelist** nodes, int id) {
@@ -124,6 +128,10 @@ bool addNode(nodelist** node, int id) {
     nodelist* new = malloc(sizeof(nodelist*));
     new->id = id;
     new->next = NULL;
+    if(*node == NULL) {
+        *node = new;
+        return true;
+    }
     nodelist *last = *node;
     while(last->next != NULL) {
         if(isNodeExist(&last, id)) {
@@ -169,12 +177,11 @@ void deleteNodeByKey(nodelist *head, int key) {
         cur = cur->next;
     }
 }
-bool isBlockExistInNode(nodelist** node, blocklist** block) {
+bool isBlockExistInNode(nodelist** node, char*data) {
     nodelist*n = *node;
     blocklist *b = n->blocklist;
-    blocklist* in = *block;
     while (b != NULL) {
-        if(like(b->data, in->data))
+        if(like(b->data, data))
             return true;
         b = b->next;
     }
@@ -182,6 +189,7 @@ bool isBlockExistInNode(nodelist** node, blocklist** block) {
 }
 void removeBlockfromBlocklist(blocklist *block, char* key) {
     blocklist *prev, *cur;
+    
     if (block != NULL && block->data == key) {
         prev = block;
         block = block->next;
@@ -201,6 +209,86 @@ void removeBlockfromBlocklist(blocklist *block, char* key) {
         cur = cur->next;
     }
 }
+//------------
+int deleteFirstByKey(blocklist* head, char* key)
+{
+    int totalDeleted = 0;
+    blocklist *prev, *cur;
+
+    /* Check if head node contains key */
+    while (head != NULL && like(head->data ,key))
+    {
+        // Get reference of head node
+        prev = head;
+        // Adjust head node link
+        head = head->next;
+        // Delete prev since it contains reference to head node
+        free(prev);
+
+        totalDeleted++;
+    }
+
+    prev = NULL;
+    cur  = head;
+
+    /* For each node in the list */
+    while (cur != NULL)
+    {
+        // Current node contains key
+        if (like(cur->data, key))
+        {
+            // Adjust links for previous node
+            if (prev != NULL) 
+            {
+                prev->next = cur->next;
+            }
+
+            // Delete current node
+            free(cur);
+
+            cur = prev->next;
+
+            totalDeleted++;
+        } 
+        else
+        {
+            prev = cur;
+            cur = cur->next;
+        }        
+
+    }
+
+    return totalDeleted;
+}
+void delete_block(blocklist **head, char* data)
+{
+ blocklist *tmp = NULL;
+ blocklist *tmp1 = NULL;
+
+ if (head == NULL || *head == NULL) return;
+
+ if(like((*head)->data ,data)) {
+  /*Delete the head node*/
+    tmp = *head;
+    *head = (*head)->next;
+    free(tmp);
+    return;
+ }
+
+ tmp = *head;
+
+ while(tmp->next && !like(tmp->next->data, data)) tmp = tmp->next;
+
+ if(tmp->next) {
+  tmp1 = tmp->next;
+  tmp->next = tmp1->next;
+  free(tmp1);
+ } else {
+     error_block_exist(data);
+ }
+}
+//------------
+
 
 void removeBlock(nodelist **head, char* data) {
     nodelist *node = *head;
@@ -208,9 +296,12 @@ void removeBlock(nodelist **head, char* data) {
     test->data = data;
     bool is_block_exist = false;
     while(node != NULL) {
-        blocklist* now = node->blocklist;
-        if(isBlockExistInNode(&node, &test)){
-            removeBlockfromBlocklist(now, data);
+        blocklist** now = &node->blocklist;
+        if(isBlockExistInNode(&node, data)){
+            printf("found block %d\n", node->id);
+            // removeBlockfromBlocklist(now, data);
+            // deleteFirstByKey(*now, data);
+            delete_block(now, data);
             is_block_exist = true;
         }
         node = node->next;
@@ -239,6 +330,7 @@ int pushBlock(nodelist** nodes, blocklist** block) {
 void addBlockById(nodelist** nodes, char* data, int node_id) {
     blocklist* new = malloc(sizeof(blocklist));
     new->data = data;
+    new->next = NULL;
     nodelist *node = *nodes;
     if(!isNodeExist(&node, node_id)) {
         error_node_exist(node_id);
@@ -246,29 +338,47 @@ void addBlockById(nodelist** nodes, char* data, int node_id) {
     }
     while (node != NULL) {
         if (node->id == node_id) {
-            if(isBlockExistInNode(&node, &new)) {
+            if(isBlockExistInNode(&node, data)) {
                 error_block_alrdy_exist(new->data);
                 return ;
             }
             pushBlock(&node, &new);
-            break;
+            new = NULL;
+            return;
         }
         node = node->next;
     }
 }
-void addBlockAll(nodelist**nodes, char*data) {
+void addBlockAll(nodelist**nodes, int*ids, char*data) {
     blocklist* new = malloc(sizeof(blocklist));
     new->data = malloc(strlen(data)+1);
     new->data = data;
     new->next = NULL;
     nodelist *node = *nodes;
-    while (node != NULL) {
-            if(!isBlockExistInNode(&node, &new)) {
-                pushBlock(&node, &new);
-            }
+    int i=0;
+    while(node) {
+        addBlockById(&node, data, ids[i++]);
         node = node->next;
     }
 }
+
+// void addBlockAll(nodelist**nodes, char*data) {
+//     blocklist* new = malloc(sizeof(blocklist));
+//     new->data = malloc(strlen(data)+1);
+//     new->data = data;
+//     new->next = NULL;
+//     nodelist *node = *nodes;
+//     while (node != NULL) {
+//         if(node->id == 0) goto jump; 
+//             if(!isBlockExistInNode(&node, data)) {
+//                 // printf("block doesn't exist- %s --> %d\n", new->data, node->id);
+//                 pushBlock(&node, &new);
+//             }
+//         jump:
+//         node = node->next;
+//     }
+//     new =NULL;
+// }
 
 void printBlocksById(nodelist* list, int index) {
     nodelist* n = list;
@@ -289,15 +399,16 @@ void printBlocksById(nodelist* list, int index) {
 
 void printNodes(nodelist**list, bool l) {
     nodelist*n = *list;
+    if(n==NULL){ printf("blockchain is empty\n"); return;}
     while(n != NULL) {
-        if(n->id != 0) {
+        // if(n->id != 0) {
             if(l AND !isNodeEmpty(&n)) {
                printf("node - %d: ", n->id);
                printBlocksById(n, n->id);
             } 
             else
                 printf("node - %d\n", n->id);
-        } 
+        // } 
         n = n->next;
     }
 }
@@ -343,7 +454,7 @@ blocklist* getCommonBlocklist(nodelist**nodes) {
     nodelist* node = *nodes;
     blocklist* bl = NULL;
     while(node != NULL) {
-        if(node->id == 0) goto step;
+        // if(node->id == 0) goto step;
         blocklist*block = node->blocklist;
         while(block != NULL) {
             // printf("-- %s --\n", block->data);
@@ -352,7 +463,7 @@ blocklist* getCommonBlocklist(nodelist**nodes) {
             }
             block = block->next;
         }
-        step:  
+        // step:  
         node = node->next;
     }
     return bl;
@@ -384,6 +495,7 @@ bool is_block_sync(blocklist*b1, blocklist*b2) {
 }
 
 bool is_sync(nodelist**nodes) {
+    if(*nodes == 0) return true;
     nodelist* curr = *nodes;
     nodelist* n_next = curr->next;
     while(n_next) {
@@ -413,27 +525,35 @@ void trim(char* dest, char* src) {
 }
 
 
-int blockchain(nodelist* nodes, string_array* cmds) {
+you_do* blockchain(nodelist** nodes, string_array* cmds) {
     bool is_add=false,
         is_rm=false,
         is_node=false,
-        is_block=false;
+        is_block=false,
+        is_all;
+    you_do* reply = malloc(sizeof(you_do*));
+    reply->add_node = false;
+    reply->rm_node = false;
+    reply->rm_all_nodes = false;
+    reply->add_block = false;
+    reply->add_block_all = false;
+    reply->rm_block = false;
     if(cmds->size==1 OR cmds->size==2){
         if(like(cmds->array[0], "quit")) {
-            save_quit(&nodes, "Nodes");
+            save_quit(nodes, "Nodes");
             return 0;
         } else if(like(cmds->array[0], "ls") AND cmds->array[1]!=NULL AND like(cmds->array[1], "-l")){
-            printNodes(&nodes, true);
+            printNodes(nodes, true);
             return 0;
         } else if(like(cmds->array[0], "ls")) {
-            printNodes(&nodes, false);
+            printNodes(nodes, false);
             return 0;
         } else if(like(cmds->array[0], "sync")){
-            sync_nodes(&nodes);
+            sync_nodes(nodes);
             return 0;
         } else {
             error_commd;
-            return -1;
+            return 0;
         }
     } else if (cmds->size>2) {
         if(like(cmds->array[0], "add"))
@@ -442,70 +562,83 @@ int blockchain(nodelist* nodes, string_array* cmds) {
             is_rm = true;
         else {
             error_commd;
-            return -1;
+            return 0;
         }
         if((is_add OR is_rm) AND like(cmds->array[1], "node"))
             is_node = true;
         else if((is_rm OR is_add) AND like(cmds->array[1], "block"))
             is_block = true;
         else {
-            // error_commd;
-            return -1;
+            error_commd;
+            return 0;
         }
     } else {
         error_commd;
-        return -1;
+        return 0;
     }
-    
-    for(int start=2; start<cmds->size; start++) {
-        if(is_add) {
-            if(is_node) {
-                addNode(&nodes, atoi(cmds->array[start]));
-            } else if(is_block AND cmds->size>3) {
-                if(like(cmds->array[3], "*")) {
-                    addBlockAll(&nodes, cmds->array[2]);
-                    return 0;
-                } else {
-                    printf("start:%d\n", start);
-                    addBlockById(&nodes, cmds->array[2], atoi(cmds->array[start]));                }
-            } else {
-                error_commd;
-                return -1;
-            }
-        } else if(is_rm) {
-            if(is_node) {
-                if(like(cmds->array[2], "*")) {
-                    // nodelist* n = *nodes;
-                    deleteAllNodes(&nodes);
-                    return 0;
-                } else if(is_node AND cmds->size>2) {
-                    nodelist* toDelete = nodes;
-                    deleteNodeByKey(toDelete, atoi(cmds->array[start]));
-                } else {
-                    error_commd;
-                    return -1;
-                }               
-            } else if(is_block) {
-                removeBlock(&nodes, cmds->array[start]);
-            } else {
-                error_commd;
-                return -1;
-            }
-        }
+    if(cmds->size >= 3) {
+        if(like(cmds->array[2],"*") OR like(cmds->array[3], "*"))
+            is_all = true;
     }
-    return 1;
+    if(is_rm AND is_node AND is_all)
+        reply->rm_all_nodes = true;
+    else if(is_rm AND is_node)
+        reply->rm_node = true;
+    else if(is_rm AND is_block)
+        reply->rm_block = true;
+    else if(is_add AND is_node)
+        reply->add_node = true;
+    else if(is_add AND is_block AND is_all)
+        reply->add_block_all = true;
+    else if(is_add AND is_block)
+        reply->add_block = true;
+    reply->array = malloc(sizeof(cmds));
+    reply->array->size = cmds->size-2;
+    int i=0;
+    for(int st=2; st<cmds->size; st++) {
+        reply->array->array[i++] = cmds->array[st];
+        // if(is_add) {
+        //     if(is_node) {
+        //         addNode(nodes, atoi(cmds->array[start]));
+        //     } else if(is_block AND cmds->size>3) {
+        //         if(like(cmds->array[3], "*")) {
+        //             int* ids = node_ids(nodes);
+        //             addBlockAll(nodes, ids, "er");
+        //             return 0;
+        //         } else {
+        //             printf("start:%d\n", start);
+        //             addBlockById(nodes, cmds->array[2], atoi(cmds->array[start]));                }
+        //     } else {
+        //         error_commd;
+        //         return 0;
+        //     }
+        // } else if(is_rm) {
+        //     if(is_node) {
+        //         if(like(cmds->array[2], "*")) {
+        //             // nodelist* n = *nodes;
+        //             deleteAllNodes(nodes);
+        //             return 0;
+        //         } else if(is_node AND cmds->size>2) {
+        //             nodelist* toDelete = *nodes;
+        //             deleteNodeByKey(toDelete, atoi(cmds->array[start]));
+        //         } else {
+        //             error_commd;
+        //             return 0;
+        //         }               
+        //     } else if(is_block) {
+        //         removeBlock(nodes, cmds->array[start]);
+        //     } else {
+        //         error_commd;
+        //         return 0;
+        //     }
+        // }
+    }
+    return reply;
 }
 
 int main() {
     nodelist *nodes = malloc(sizeof (*nodes));
-    // Genesis node
-    nodes->id = 0;
-    nodes->blocklist = malloc(sizeof(blocklist*));
-    nodes->next = NULL;
-    nodes->blocklist->data = "0";
-    nodes->blocklist->time = "00:00:00";
-    nodes->blocklist->next = NULL;
-    // genessis node
+    nodes = NULL;
     
     while(true) {
         char is_syn = is_sync(&nodes) ? 's' : '-';
@@ -516,7 +649,27 @@ int main() {
         char* clear_cmd = malloc(strlen(s_cmd)+1);
         trim(clear_cmd, s_cmd);
         string_array* cmd_arr = my_split(clear_cmd, " ");
-        blockchain(nodes, cmd_arr);
+        you_do *reply = blockchain(&nodes, cmd_arr);
+        if(reply != 0) {
+            if(reply->rm_all_nodes)
+                deleteAllNodes(&nodes);
+            else if(reply->rm_node){
+                for(int i=0; reply->array->array[i]!=NULL; i++)
+                    deleteNodeByKey(nodes, atoi(reply->array->array[i]));
+            } else if(reply->rm_block){
+                for(int i=0; reply->array->array[i]!=NULL; i++)
+                    removeBlock(&nodes, reply->array->array[i]);
+            } else if(reply->add_node) {
+                for(int i=0; reply->array->array[i]!=NULL; i++)
+                    addNode(&nodes, atoi(reply->array->array[i]));
+            } else if (reply->add_block_all) {
+                int *ar = node_ids(&nodes);
+                addBlockAll(&nodes, ar, reply->array->array[0] );
+            } else if(reply->add_block) {
+                for(int i=1; reply->array->array[i]!=NULL; i++)
+                addBlockById(&nodes, reply->array->array[0], atoi(reply->array->array[i]));
+            }
+        }
     }
 
 
@@ -532,26 +685,31 @@ int main() {
     // addBlockById(&nodes, "block 1", 3);
     // addBlockById(&nodes, "block 1", 1);
     // addBlockById(&nodes, "block 1", 1);
-    // addBlockById(&blockchain, "block 2", 3);
-    // addBlockById(&blockchain, "block 4", 4);
-    // addBlockById(&blockchain, "block 45", 4);
-    // addBlockById(&blockchain, "block 4", 2);
+    // addBlockById(&nodes, "block 2", 3);
+    // addBlockById(&nodes, "block 43", 4);
+    // addBlockById(&nodes, "block 45", 4);
+    // addBlockById(&nodes, "block 43", 2);
     // addBlockById(&blockchain, "block 5", 3);
     // addBlockById(&blockchain, "block 6", 31);
     // addBlockById(&blockchain, "block 2", 5);
     // addBlockById(&blockchain, "block 1", 5);
-    // printBlocksById(blockchain, 0);.
-    // removeBlock(&nodes, "block 3");
+    // printBlocksById(blockchain, 0);
+    // int * ids = node_ids(&nodes);
+    // printNodes(&nodes, true);
+    // removeBlock(&nodes, "block 45");
+    // removeBlock(&nodes, "block 43");
+    // addBlockAll(&nodes, ids, "new");
+    // addBlockById(&nodes, "block 99", 2);
     // // removeBlock(&blockchain, "block 32www");
     // // printBlocksById(blockchain, 3);
     // is_sync(&blockchain);
     // printNodes(&nodes, true);
     // // printf("---------------------\n");
-    // // findBiggestBlock(&blockchain);
     // sync_nodes(&blockchain);
     // // printNodes(&blockchain, true);
     // // printf("size: %d\n", countNodes(&blockchain));
     // deleteAllNodes(&nodes);
+    // addNode(&nodes, 1);
     // // printf("size: %d\n", countCode(&blockchain));
     // printNodes(&nodes, true);
     // // save_quit(&blockchain, "Nodes");
