@@ -6,7 +6,7 @@
 #include <fcntl.h>
 
 #define ALL "*"
-#define OR ||
+#define OR  ||
 #define AND &&
 #define ENDL  putchar('\n')
 #define MAX_READ_SIZE 200
@@ -30,3 +30,19 @@ typedef struct s_nodelist {
     struct s_nodelist* next;
 } nodelist;
 
+#ifndef STRUCT_STRING_ARRAY
+#define STRUCT_STRING_ARRAY
+typedef struct s_string_array {
+    int size;
+    char** array;
+} string_array;
+#endif
+typedef struct s_you_do {
+    int add_node;
+    int rm_node;
+    int rm_all_nodes;
+    int rm_block;
+    int add_block;
+    int add_block_all;
+    string_array* array;
+} you_do;
