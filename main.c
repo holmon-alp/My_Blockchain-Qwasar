@@ -360,6 +360,7 @@ void sync_nodes(nodelist**nodes) {
         node = node->next;
     }
 }
+
 bool is_block_sync(blocklist**b1, blocklist**b2) {
     blocklist* bl1 = *b1;
     blocklist* bl2 = *b2;
@@ -374,6 +375,8 @@ bool is_block_sync(blocklist**b1, blocklist**b2) {
         bl1 = bl1->next;
         bl2 = bl2->next;
     }
+    if(bl2)
+        return false;
     return true;
 }
 
