@@ -32,14 +32,11 @@ make
 
 ## Usage
 After compile write this command.<br>
-![Blockchain_handbook](https://user-images.githubusercontent.com/96412090/191197208-653bc707-556e-4385-97e2-66930295814d.gif)
 
 ```
 ./my_blockchain
 ```
+![Blockchain_handbook](https://user-images.githubusercontent.com/96412090/191197208-653bc707-556e-4385-97e2-66930295814d.gif)
 
 ### The Core Team
 
-
-<span><i>Made at <a href='https://qwasar.io'>Qwasar Silicon Valley</a></i></span>
-<span><img alt='Qwasar Silicon Valley Logo' src='https://storage.googleapis.com/qwasar-public/qwasar-logo_50x50.png' width='20px'></span>
