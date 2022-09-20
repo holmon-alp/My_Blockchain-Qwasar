@@ -4,6 +4,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <stdbool.h>
 #define DB "./BLOCKCHAIN"
 #define ALL     "*"
 #define OR      ||
@@ -11,11 +12,13 @@
 #define ENDL    putchar('\n')
 #define EXIT    1001
 #define MAX_READ_SIZE 4050
-#define error_node_exist(n)         (printf("node doesn't exist (%d)\n", n))
-#define error_node_alrdy_exist(n)   (printf("this node already exists (%d)\n", n))
-#define error_block_alrdy_exist(n)  (printf("this block already exists (%s)\n", n))
-#define error_block_exist(n)        (printf("block doesn't exist (%s)\n", n))
-#define error_commd                 printf("command not found\n""Use: add node nid..\tadd block bid nid..\n""\trm node nid..\trm block bid..\n\tls (-l) or sync or quit\n")
+#define OK                       printf("OK\n")
+#define error_node_exist         printf("NOK: node doesn't exist\n")
+#define error_node_alrdy_exist   printf("NOK: this node already exists\n")
+#define error_block_alrdy_exist  printf("NOK: this block already exists\n")
+#define error_block_exist        printf("NOK: block doesn't exist\n")
+#define error_commd              printf("NOK: command not found\n")
+#define error_resourse           printf("NOK: no more resources available on the computer\n")
 typedef struct s_bocklist {
     char* data;
     size_t size;
@@ -39,10 +42,14 @@ char* my_strtok(char*,const char*);
 string_array* my_split(char*, char*);
 void putch(char );
 void putstr(char*);
-int like(char*, char*);
+bool like(char*, char*);
 void trim(char* , char*);
 
 void itoa(int , char[]);
 void reverse(char[]);
-
 char* my_readline(int );
+
+bool is_sync(nodelist**);
+int count_nodes(nodelist**);
+void read_linked_list(nodelist**);
+int blockchain(nodelist**, string_array*);
