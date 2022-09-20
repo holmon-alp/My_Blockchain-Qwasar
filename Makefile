@@ -1,9 +1,13 @@
+CC=gcc
+CFLAGS= -Wall -Wextra -Werror -I.
+DEPS = main.h
+OBJ = func.o readline.o blockchain.o main.c
 TARGET = my_blockchain
-WWW = -Wall -Wextra -Werror
-CC = gcc
-SRC = main.c func_and_time.c readline.c
-all:
-	${CC} ${WWW} -o ${TARGET} ${SRC}
+%.o: %.c $(DEPS)
+	$(CC) -c -o $@ $< $(CFLAGS)
+
+$(TARGET): $(OBJ)
+	$(CC) -o $@ $^ $(CFLAGS)
 
 fclean:
-	rm -f ${TARGET}
+	rm -f ${TARGET} *.o
