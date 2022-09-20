@@ -1,7 +1,5 @@
 #include "main.h"
-typedef int  bool;
 //for parse commands
-enum bool {true = 1, false = 0};
 // quest08 help
 char *my_strtok(char *s, const char *sep)
 {
@@ -96,17 +94,17 @@ void reverse(char s[]) {
          s[j] = c;
      }
  }
- void itoa(int n, char s[]) {
-     int i, sign;
+void itoa(int n, char s[]) {
+    int i, sign;
  
-     if ((sign = n) < 0)  
-         n = -n;          
-     i = 0;
-     do {       
-         s[i++] = n % 10 + '0';   
-     } while ((n /= 10) > 0);     
-     if (sign < 0)
-         s[i++] = '-';
-     s[i] = '\0';
-     reverse(s);
+    if ((sign = n) < 0)  
+        n = -n;          
+    i = 0;
+    do {       
+        s[i++] = n % 10 + '0';   
+    } while ((n /= 10) > 0);     
+    if (sign < 0)
+        s[i++] = '-';
+    s[i] = '\0';
+    reverse(s);
  }
